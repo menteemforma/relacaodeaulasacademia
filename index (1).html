@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Academia Mente em Forma</title>
+    <!-- Carrega os estilos (Tailwind) e ícones (FontAwesome) automaticamente -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Detalhes de visualização para celular */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-50 flex justify-center font-sans">
+    
+    <!-- Tela do Celular -->
+    <div class="w-full max-w-md bg-white shadow-2xl relative flex flex-col h-screen overflow-hidden">
+        
+        <!-- Header / Topo -->
+        <div class="bg-gradient-to-br from-indigo-600 to-purple-700 text-white pt-12 pb-8 px-6 rounded-b-3xl shadow-lg relative shrink-0">
+            <div class="absolute top-0 right-0 opacity-10 pointer-events-none">
+                <i class="fa-solid fa-brain text-[150px] -mt-10 -mr-10"></i>
+            </div>
+            
+            <div class="flex items-center gap-3 mb-4 relative z-10">
+                <div class="bg-white/20 w-12 h-12 flex items-center justify-center rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-brain text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold leading-tight">Academia</h1>
+                    <h2 class="text-lg font-medium text-indigo-100">Mente em Forma</h2>
+                </div>
+            </div>
+            
+            <p class="text-indigo-50 text-sm mt-2 relative z-10">
+                Bem-vindo(a) ao seu espaço de treinamento. Escolha sua aula abaixo e comece agora.
+            </p>
+        </div>
+
+        <!-- Conteúdo Rolável -->
+        <div class="flex-1 px-6 pt-6 pb-24 overflow-y-auto">
+            
+            <!-- Botão Planilha -->
+            <a href="https://docs.google.com/spreadsheets/d/1Epi8Np9KEmFEA31WzMi8wStAkLWHZhox/edit?gid=1170585725#gid=1170585725" target="_blank" class="block mb-6 transform transition hover:scale-[1.02] active:scale-95">
+                <div class="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-4 shadow-md text-white flex items-center justify-between">
+                    <div class="flex items-center gap-4">
+                        <div class="bg-white/20 w-10 h-10 flex items-center justify-center rounded-full">
+                            <i class="fa-solid fa-file-excel text-lg"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold">Cronograma Completo</h3>
+                            <p class="text-xs text-emerald-50">Acesse a planilha de aulas</p>
+                        </div>
+                    </div>
+                    <i class="fa-solid fa-external-link-alt text-white/70"></i>
+                </div>
+            </a>
+
+            <!-- Barra de Pesquisa (A Lupa) -->
+            <div class="relative mb-6">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <i class="fa-solid fa-search text-slate-400"></i>
+                </div>
+                <input type="text" id="input-busca" placeholder="Buscar tema (ex: doces, ansiedade)..." 
+                       class="w-full bg-slate-100 border-none rounded-xl pl-10 pr-10 py-3.5 text-sm focus:ring-2 focus:ring-indigo-500 outline-none text-slate-700 transition-all placeholder:text-slate-400" autocomplete="off">
+                <button id="btn-limpar" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 hidden">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Título da Seção -->
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-800 text-lg" id="titulo-lista">Aulas Disponíveis</h3>
+                <span id="badge-aulas" class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-full">51 aulas</span>
+            </div>
+
+            <!-- Lista de Aulas -->
+            <div id="container-aulas" class="space-y-3">
+                <!-- Javascript vai injetar as aulas aqui -->
+            </div>
+
+        </div>
+
+        <!-- Menu Inferior -->
+        <div class="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-6 py-4 flex justify-around items-center z-20">
+            <button class="flex flex-col items-center gap-1 text-indigo-600">
+                <i class="fa-solid fa-play-circle text-2xl"></i>
+                <span class="text-[10px] font-bold">Aulas</span>
+            </button>
+            <a href="https://docs.google.com/spreadsheets/d/1Epi8Np9KEmFEA31WzMi8wStAkLWHZhox/edit?gid=1170585725#gid=1170585725" target="_blank" class="flex flex-col items-center gap-1 text-slate-400 hover:text-indigo-600 transition-colors">
+                <i class="fa-regular fa-calendar text-2xl"></i>
+                <span class="text-[10px] font-medium">Cronograma</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Lógica do Aplicativo -->
+    <script>
+        const linkPlanilhaGeral = "https://docs.google.com/spreadsheets/d/1Epi8Np9KEmFEA31WzMi8wStAkLWHZhox/edit?gid=1170585725#gid=1170585725";
+
+        const temporadas = [
+            {
+                id: 1, titulo: "TEMPORADA 1 (Aulas 1 ao 10)", corBg: "bg-blue-50", corText: "text-blue-800", corBorder: "border-blue-200",
+                aulas: [
+                    { id: "1", titulo: "AULA 1 - Lidando com o descrédito", descricao: "Como lidar com a falta de confiança no início da jornada.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/45890d24-df46-4a5e-aefc-185c5e68570d?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "2", titulo: "AULA 2 - Perfeccionismo", descricao: "'Eu quero fazer tudo certinho - se não consigo, eu desanimo e desisto'", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/a7f4c7e2-a856-45db-8834-fa750a1e23ea?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "3", titulo: "AULA 3 - Sabotagem: Dicas essenciais", descricao: "Identificação de gatilhos mentais e comportamentos autodestrutivos.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/552b675f-57b8-4a9d-b8a7-3986acfffb77?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "4", titulo: "AULA 4 - Vencendo o Desânimo", descricao: "O que fazer quando a motivação cai.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/fde8d9e6-6b01-489d-9772-360392f3159b?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "5.1", titulo: "AULA 5 (PARTE 1) – Inimigos ocultos", descricao: "Hábitos e crenças que te impedem de emagrecer.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/ecf784ca-f1de-4e7c-8a1e-380330feeaba?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "5.2", titulo: "AULA 5 (PARTE 2) – Inimigos ocultos", descricao: "Continuação: Hábitos que te impedem de emagrecer.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/4f2164e1-569c-4548-b6d8-918d5f07e557?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "6", titulo: "AULA 6 – Como acabar com o efeito sanfona", descricao: "A transição de dieta temporária para estilo de vida definitivo.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/d7a4f0ab-0efe-47f4-a220-28bfa3c316d9?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "7", titulo: "AULA 7 – Pessoas que comentam sobre seu corpo", descricao: "Gestão de limites e blindagem emocional contra críticas.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/53d1df9e-568d-4c63-8a4d-eeb70df16dd2?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "8", titulo: "AULA 8 - Mente fortalecida em viagens", descricao: "Como aproveitar viagens sem perder o controle alimentar.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/ded154f8-76ee-4d88-b455-f2cd1714c9d7?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "9", titulo: "AULA 9 – Superando o 'eu mereço comer'", descricao: "Como lidar com a comida depois de um dia exaustivo.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/6da36195-06e5-49eb-8c05-38e3e8f7f212?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "10", titulo: "AULA 10 - Ansiedade ao comer e paciência", descricao: "Técnicas de regulação da ansiedade na mastigação.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/3778ec08-a6ba-4bd6-9427-13d10fbe35b6/a39ff28e-8a37-4422-a2e0-a09c0dbbab34?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                ]
+            },
+            {
+                id: 2, titulo: "TEMPORADA 2 (Aulas 11 ao 20)", corBg: "bg-emerald-50", corText: "text-emerald-800", corBorder: "border-emerald-200",
+                aulas: [
+                    { id: "11", titulo: "AULA 11 - Ser menos intenso e superar sabotagens", descricao: "Equilibrando as emoções para evitar reações impulsivas.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/512aa9c3-8768-457d-b83e-33a96605295f?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "12", titulo: "AULA 12 - Introdução à Atenção Plena", descricao: "Conceitos básicos de Mindfulness no momento atual.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/bbab67ac-601c-4f30-91d6-17960d083ac4?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "13", titulo: "AULA 13 - Exercícios de Mindfull Eating", descricao: "Práticas para comer com consciência plena.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/c57c6494-9987-480f-a2fb-e5b7eafd8bc2?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "14", titulo: "AULA 14 - Como não desanimar após recomeçar", descricao: "A importância da resiliência pela milésima vez.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/856958d8-0cfb-415b-8bb9-412b2f3783ea?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "15", titulo: "AULA 15 - Por que as coisas parecem piorar", descricao: "Entendendo a resistência ao tentar emagrecer.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/c97f3d97-c522-467d-a45b-b2ec47e52842?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "16", titulo: "AULA 16 - Não desconectar do processo", descricao: "Estratégias para manter o foco no emagrecimento a longo prazo.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/50501c8d-d375-4ac5-a692-442e92184834?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "17", titulo: "AULA 17 - Segredos para emagrecimento sem reganhos", descricao: "A ciência por trás da estabilidade de peso.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/82f11395-e8ef-4995-9f2e-59e4fc0a6fa0?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "18", titulo: "AULA 18 - Se manter firme apesar dos problemas", descricao: "Gerenciamento de crises e foco no emagrecimento.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/d50c3ce9-0375-4410-8cd0-ad184d1ab49a?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "19", titulo: "AULA 19 - AMÍGDALA CEREBRAL e Comportamento", descricao: "Neurociência do medo, estresse e a fome.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/572b8bc5-d319-4942-8cb9-b229dfcbcb39?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "20", titulo: "AULA 20 - ESTRIADO VENTRAL e NÚCLEO ACCUMBENS", descricao: "O sistema de recompensa e a busca pelo prazer.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/d96318a5-98b3-46f4-997c-04e9e7925768/8bcf3ab4-fa38-4a14-9ebc-f36b34421067?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                ]
+            },
+            {
+                id: 3, titulo: "TEMPORADA 3 (Aulas 21 ao 31)", corBg: "bg-purple-50", corText: "text-purple-800", corBorder: "border-purple-200",
+                aulas: [
+                    { id: "21", titulo: "AULA 21 - Épocas Festivas e Natal", descricao: "Por que perco a força na dieta e como superar.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/648acbd8-991b-4d13-b860-c9af571367ed?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "22", titulo: "AULA 22 - CÓRTEX PRÉ-FRONTAL", descricao: "Autocontrole e o comportamento alimentar.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/6426adec-93dd-4b83-97fc-834850074d43?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "23", titulo: "AULA 23 - Técnicas de Autocontrole", descricao: "Exercícios para fortalecer o Córtex Pré-Frontal.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/49366f20-b512-4b0a-8923-69abcc4204c6?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "24", titulo: "AULA 24 - Córtex Pré-Frontal Ventro Medial", descricao: "Seu papel no comportamento alimentar e nas decisões.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/f84cfc0d-9021-4f76-993e-82708417d4bb?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "25", titulo: "AULA 25 - Como aprender a dizer NÃO", descricao: "Treino de assertividade para recusar ofertas de comida sem culpa.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/aa168c1e-6822-4a7f-bdc5-dbb079accfca?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "26", titulo: "AULA 26 - Vontades incontroláveis", descricao: "Superando vontades impulsivas por comida.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/53738b37-ba2f-4f67-ac2f-d45303966aac?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "27", titulo: "AULA 27 - Por que ligamos o 'Dane-se'?", descricao: "E comemos demais... como quebrar esse mecanismo.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/79fc259b-d6b7-4fcb-80d3-53ee29a5ed78?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "28", titulo: "AULA 28 - Escala de Fome e Saciedade", descricao: "Ferramenta para identificar a necessidade real de alimento.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/bb68bc9b-0d8c-48a9-8bdc-a64d2bbab6c6?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "29", titulo: "AULA 29 - Por que insistimos em 'errar'?", descricao: "Mesmo sabendo o que é certo: a batalha da mente.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/d73bfc0d-508b-4e28-89ea-b80f6313ee0c?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "30", titulo: "AULA 30 - TDAH & Obesidade (PARTE 1)", descricao: "A relação entre impulsividade, atenção e peso.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/1893eb46-881b-4244-8fcf-c69e2311a90e?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "31", titulo: "AULA 31 - TDAH & Obesidade (PARTE 2)", descricao: "Estratégias de manejo para traços de TDAH.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/4cfbe646-3b75-4572-90cf-af51bee70c13/c6e75ccc-7e1a-4020-b081-a3d885328573?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                ]
+            },
+            {
+                id: 4, titulo: "TEMPORADA 4 (Aulas 32 ao 40)", corBg: "bg-rose-50", corText: "text-rose-800", corBorder: "border-rose-200",
+                aulas: [
+                    { id: "32", titulo: "AULA 32 - Falta de certeza", descricao: "Trabalhando a autoconfiança e o medo de falhar novamente.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/dc4b2051-a75c-4458-962d-683e2176e9c1?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "33", titulo: "AULA 33 - Pressa por emagrecer", descricao: "Ajustando expectativas e focando no processo.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/dd487b18-e796-47ea-84d8-ec141186a8da?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "34", titulo: "AULA 34 - EMAGRECI - e agora?", descricao: "Como lidar com a sensação e prevenir recaídas.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/6369c43e-4b00-465f-b63d-43f5d7061b82?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "35", titulo: "AULA 35 - Pessoas tóxicas", descricao: "Sem perder o foco nos seus objetivos.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/b604daed-f917-47b1-a938-1957f27dc217?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "36", titulo: "AULA 36 - Seja Fiel ao SIMPLES", descricao: "O poder do básico bem feito contra dietas complexas.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/889e5bd8-a471-494e-b442-1e7da15ce095?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "37", titulo: "AULA 37 - Assertividade em casa", descricao: "Quando pessoas que moram comigo tentam me sabotar.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/9ead09aa-121f-49d9-9647-4b98d3d4f38c?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "38", titulo: "AULA 38 - Situações Sociais", descricao: "E pessoas te oferecendo comida, o que fazer?", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/9a5ab0da-3821-4967-8340-9ee8a2a0eced?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "39", titulo: "AULA 39 - 8 OU 80", descricao: "Como superar o 8 ou 80 no processo de emagrecimento.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/b53df67d-ba7e-4f63-b0b0-3ca526420a42?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "40", titulo: "AULA 40 - A batalha da mente", descricao: "Como superar os conflitos internos no processo.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/174a9733-1a90-4251-8311-fe2faff16aea/970449b8-d40a-4f44-81ad-8d316b4c10e3?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                ]
+            },
+            {
+                id: 5, titulo: "TEMPORADA 5 (Aulas 41 ao 50)", corBg: "bg-amber-50", corText: "text-amber-800", corBorder: "border-amber-200",
+                aulas: [
+                    { id: "41", titulo: "AULA 41 - DOCES - COMO LIDAR?", descricao: "Estratégias para consumir de forma consciente.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/e1c7c028-4482-4de9-91da-03ded03c49a1?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "42", titulo: "AULA 42 - Vício em comida existe?", descricao: "Debate sobre hiperpalatabilidade.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/0a4dfb43-6a88-4508-9aea-a726601387fa?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "43", titulo: "AULA 43 - Comer transtornado", descricao: "Identificação de sinais e comportamentos desajustados.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/c62e1f30-880c-44d4-b62c-fec4dd07e8d2?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "44", titulo: "AULA 44 - O CÉREBRO GULOSO", descricao: "Biologia da dopamina e o descontrole.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/4a3a311f-1002-4d10-b8dc-a8ec674ea1f0?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "45", titulo: "AULA 45 - Me distanciei do meu propósito", descricao: "O que fazer para se reconectar com a jornada.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/5527986f-9a9f-4792-a7a8-6c4d9991deee?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "46", titulo: "AULA 46 - Silenciar o cérebro", descricao: "Gerenciamento da fome psicológica.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/ceffb23c-44e6-4cf6-942c-6c0ceab83abf?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "47.1", titulo: "AULA 47 (PARTE 1) - Turbinar o cérebro", descricao: "Para escolhas melhores no fim de ano.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/8b9491b2-ebd0-4d12-b368-ff7794f81934?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "47.2", titulo: "AULA 47 (PARTE 2) - Turbinar o cérebro", descricao: "Continuação: Escolhas de fim de ano.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/f06a5d99-0f98-472a-a5f7-7e8a63dfbd41?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "48", titulo: "AULA 48 - TEORIA DO CAOS", descricao: "Transformar a sua dificuldade em crescimento.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/0eed7eab-c001-4079-a5dc-f57782105607?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "49", titulo: "AULA 49 - Destravar o emagrecimento", descricao: "Superando o platô metabólico e mental.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/8ac0e6cb-e341-4b53-8079-8040a2305f09?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                    { id: "50", titulo: "AULA 50 - Como resgatar o amor próprio", descricao: "Relação entre autoaceitação e cuidado físico.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/f5d31706-496c-44fb-bda5-62dd96722bca/b3c925d2-61e5-4abf-a540-a3b1da8e8b27?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                ]
+            },
+            {
+                id: 6, titulo: "TEMPORADA 6 (Aula 51)", corBg: "bg-indigo-50", corText: "text-indigo-800", corBorder: "border-indigo-200",
+                aulas: [
+                    { id: "51", titulo: "AULA 51 - Medo de reganhar peso", descricao: "Gestão emocional após o uso de medicamentos.", link: "https://members.kiwify.com/4d5b8ba1-a0d6-42bc-89e3-bfa9d457d7da/0478617c-f313-4c71-8606-6457460dfe75/544b8756-3283-4c9e-a361-2ad8a0687938?club=03ce653b-f218-4702-9c0b-ad1160dd9074" },
+                ]
+            }
+        ];
+
+        let blocoAberto = 1;
+
+        // Referências do HTML
+        const inputBusca = document.getElementById('input-busca');
+        const btnLimpar = document.getElementById('btn-limpar');
+        const containerAulas = document.getElementById('container-aulas');
+        const tituloLista = document.getElementById('titulo-lista');
+        const badgeAulas = document.getElementById('badge-aulas');
+
+        // Função para abrir/fechar temporada
+        window.toggleBloco = function(id) {
+            blocoAberto = blocoAberto === id ? null : id;
+            renderizar();
+        };
+
+        // Função que desenha o aplicativo na tela
+        function renderizar() {
+            const termo = inputBusca.value.toLowerCase().trim();
+            containerAulas.innerHTML = ''; // Limpa a tela
+
+            if (termo) {
+                // MODO DE BUSCA
+                tituloLista.textContent = "Resultados da Busca";
+                badgeAulas.style.display = 'none';
+                let encontrou = false;
+
+                temporadas.forEach(temp => {
+                    temp.aulas.forEach(aula => {
+                        if (aula.titulo.toLowerCase().includes(termo) || aula.descricao.toLowerCase().includes(termo)) {
+                            encontrou = true;
+                            containerAulas.innerHTML += `
+                                <a href="${aula.link}" target="_blank" class="group flex items-center gap-3 bg-white border border-slate-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all active:bg-slate-50">
+                                    <div class="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                                        <i class="fa-solid fa-play-circle"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <span class="text-[9px] font-bold text-indigo-500 uppercase tracking-wider mb-0.5 block">${temp.titulo}</span>
+                                        <h4 class="font-bold text-slate-800 text-sm mb-0.5 leading-tight">${aula.titulo}</h4>
+                                        <p class="text-[11px] text-slate-500 leading-snug">${aula.descricao}</p>
+                                    </div>
+                                </a>
+                            `;
+                        }
+                    });
+                });
+
+                if (!encontrou) {
+                    containerAulas.innerHTML = `<div class="text-center py-8 text-slate-500 text-sm bg-slate-100 rounded-xl">Nenhuma aula encontrada com o termo "${termo}".</div>`;
+                }
+            } else {
+                // MODO NORMAL (TEMPORADAS)
+                tituloLista.textContent = "Aulas Disponíveis";
+                badgeAulas.style.display = 'block';
+
+                temporadas.forEach(temp => {
+                    const isAberto = blocoAberto === temp.id;
+                    let htmlTemporada = `
+                        <div class="border rounded-2xl overflow-hidden ${temp.corBg} transition-all shadow-sm">
+                            <button onclick="toggleBloco(${temp.id})" class="w-full flex items-center justify-between p-4 font-bold text-left hover:bg-white/40 transition-colors ${temp.corText}">
+                                <span class="text-[13px] tracking-tight">${temp.titulo}</span>
+                                <i class="fa-solid ${isAberto ? 'fa-chevron-up' : 'fa-chevron-down'} shrink-0 ml-2"></i>
+                            </button>
+                    `;
+
+                    if (isAberto) {
+                        htmlTemporada += `<div class="bg-white p-3 flex flex-col gap-2 border-t border-black/5">`;
+                        temp.aulas.forEach(aula => {
+                            htmlTemporada += `
+                                <a href="${aula.link}" target="_blank" class="group flex items-center gap-3 bg-slate-50 border border-slate-100 rounded-xl p-3 hover:shadow-md transition-all active:bg-slate-100">
+                                    <div class="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-500 shrink-0">
+                                        <i class="fa-solid fa-play-circle text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-bold text-slate-700 text-xs mb-0.5">${aula.titulo}</h4>
+                                        <p class="text-[10px] text-slate-500 leading-snug">${aula.descricao}</p>
+                                    </div>
+                                </a>
+                            `;
+                        });
+                        htmlTemporada += `</div>`;
+                    }
+                    htmlTemporada += `</div>`;
+                    containerAulas.innerHTML += htmlTemporada;
+                });
+            }
+        }
+
+        // Eventos da Lupa
+        inputBusca.addEventListener('input', () => {
+            btnLimpar.style.display = inputBusca.value ? 'flex' : 'none';
+            renderizar();
+        });
+
+        btnLimpar.addEventListener('click', () => {
+            inputBusca.value = '';
+            btnLimpar.style.display = 'none';
+            renderizar();
+        });
+
+        // Inicia o app
+        renderizar();
+    </script>
+</body>
+</html>
