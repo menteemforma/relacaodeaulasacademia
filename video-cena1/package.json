@@ -1,0 +1,25 @@
+{
+  "name": "video-cena1",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render Cena1 out/cena1.mp4",
+    "still": "remotion still Cena1 out/frame.png"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^8.17.10",
+    "@remotion/cli": "^4.0.535",
+    "@remotion/fonts": "^4.0.535",
+    "@remotion/paths": "^4.0.535",
+    "@remotion/three": "^4.0.535",
+    "@types/react": "^18.3.12",
+    "@types/three": "^0.169.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.535",
+    "three": "^0.169.0",
+    "typescript": "^5.6.3",
+    "zod": "4.5.4"
+  }
+}
