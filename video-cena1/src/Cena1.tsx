@@ -6,14 +6,12 @@ import {useLayoutEffect} from 'react';
 import {
   AbsoluteFill,
   Easing,
-  OffthreadVideo,
   interpolate,
   spring,
   staticFile,
   useCurrentFrame,
   useVideoConfig,
 } from 'remotion';
-import {z} from 'zod';
 
 // Montserrat (fonte variável) embutida em public/fonts: renderiza sem internet
 const fontFamily = 'Montserrat';
@@ -25,13 +23,6 @@ loadFont({
   unicodeRange: 'U+0100-024F, U+1E00-1EFF',
 });
 
-export const cena1Schema = z.object({
-  kicker: z.string(),
-  frase1: z.string(),
-  frase2: z.string(),
-  videoArquivo: z.string(),
-});
-
 // Paleta azul da cena
 const AZUL_NOITE = '#020722';
 const AZUL_PROFUNDO = '#06145C';
@@ -39,10 +30,44 @@ const AZUL_REAL = '#1440FF';
 const AZUL_ELETRICO = '#2F7BFF';
 const CIANO = '#5FD8FF';
 
-// Momentos-chave (frames a 30 fps)
-const T_SAIDA_FRASE1 = 78;
-const T_ENTRADA_FRASE2 = 96;
-const T_PORTAL = 148;
+/*
+ * Roteiro sincronizado com a fala (frames a 30 fps; tempos do Whisper):
+ *   0,34s "medicação"  · 0,80s "reduz"  · 2,40s "food noise"
+ *   3,40s "urgência"   · 4,82s "fome"   · 5,14s "isso é maravilhoso"
+ *   6,24s "Mas eu preciso te perguntar..."  -> a cena se abre e revela o vídeo
+ */
+export type Linha = {texto: string; inicio: number; destaque?: boolean; tamanho?: number};
+export type Frase = {linhas: Linha[]; saida?: number};
+
+export const ROTEIRO_PADRAO: Frase[] = [
+  {linhas: [{texto: 'A MEDICAÇÃO', inicio: 6}], saida: 22},
+  {
+    linhas: [
+      {texto: 'REDUZ O', inicio: 26, tamanho: 96},
+      {texto: 'FOOD NOISE', inicio: 66, destaque: true},
+    ],
+    saida: 90,
+  },
+  {
+    linhas: [
+      {texto: 'A URGÊNCIA', inicio: 100},
+      {texto: 'E A FOME', inicio: 136, destaque: true},
+    ],
+    saida: 148,
+  },
+  {
+    linhas: [
+      {texto: 'ISSO É', inicio: 154, tamanho: 96},
+      {texto: 'MARAVILHOSO', inicio: 162, destaque: true, tamanho: 104},
+    ],
+  },
+];
+
+// Momentos-chave
+const T_MORPH_INICIO = 150; // "isso é maravilhoso": a cápsula vira cérebro
+const T_MORPH_FIM = 176;
+export const T_ABERTURA = 184; // "Mas..." (6,24s): a cena se abre
+export const DURACAO_CENA1 = 204;
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
@@ -50,7 +75,7 @@ const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
 
 const Fundo: React.FC = () => {
   const frame = useCurrentFrame();
-  const angulo = interpolate(frame, [0, 180], [160, 215]);
+  const angulo = interpolate(frame, [0, DURACAO_CENA1], [160, 215]);
   const brilhoX = 50 + Math.sin(frame / 28) * 22;
   const brilhoY = 38 + Math.cos(frame / 34) * 12;
 
@@ -107,13 +132,13 @@ const CameraEmMovimento: React.FC = () => {
   const frame = useCurrentFrame();
   const camera = useThree((s) => s.camera);
   const invalidate = useThree((s) => s.invalidate);
-  const angulo = interpolate(frame, [0, 180], [-0.55, 0.45], {
+  const angulo = interpolate(frame, [0, DURACAO_CENA1], [-0.55, 0.45], {
     easing: Easing.inOut(Easing.cubic),
   });
-  const distancia = interpolate(frame, [0, 180], [11, 7.2], {
+  const distancia = interpolate(frame, [0, DURACAO_CENA1], [11, 7.2], {
     easing: Easing.inOut(Easing.cubic),
   });
-  const altura = interpolate(frame, [0, 180], [2.4, -0.4]);
+  const altura = interpolate(frame, [0, DURACAO_CENA1], [2.4, -0.4]);
 
   // useLayoutEffect + invalidate: a câmera é posicionada ANTES do quadro ser desenhado
   useLayoutEffect(() => {
@@ -134,7 +159,7 @@ type ObjetoProps = {
   posicao: [number, number, number];
   escala: number;
   cor: string;
-  forma: 'torus' | 'icosa' | 'esfera' | 'knot';
+  forma: 'torus' | 'icosa' | 'esfera' | 'capsula';
   fase: number;
 };
 
@@ -148,13 +173,13 @@ const Objeto3D: React.FC<ObjetoProps> = ({posicao, escala, cor, forma, fase}) =>
   return (
     <mesh
       position={[posicao[0], posicao[1] + flutua, posicao[2]]}
-      rotation={[rot, rot * 1.3, 0]}
+      rotation={[rot, rot * 1.3, forma === 'capsula' ? 0.8 : 0]}
       scale={escala * entrada}
     >
       {forma === 'torus' && <torusGeometry args={[1, 0.38, 48, 96]} />}
       {forma === 'icosa' && <icosahedronGeometry args={[1, 0]} />}
       {forma === 'esfera' && <sphereGeometry args={[1, 64, 64]} />}
-      {forma === 'knot' && <torusKnotGeometry args={[0.8, 0.26, 160, 24]} />}
+      {forma === 'capsula' && <capsuleGeometry args={[0.5, 1.2, 16, 48]} />}
       <meshPhysicalMaterial
         color={cor}
         emissive={AZUL_PROFUNDO}
@@ -178,11 +203,11 @@ const Cena3D: React.FC = () => {
       <pointLight position={[6, 6, 8]} intensity={320} color="#ffffff" />
       <pointLight position={[-7, -3, 4]} intensity={260} color={CIANO} />
       <pointLight position={[0, -6, -6]} intensity={200} color={AZUL_REAL} />
-      <Objeto3D forma="torus" posicao={[-1.35, 3.1, -1]} escala={0.75} cor={AZUL_ELETRICO} fase={0} />
+      <Objeto3D forma="capsula" posicao={[-1.35, 3.1, -1]} escala={0.8} cor={AZUL_ELETRICO} fase={0} />
       <Objeto3D forma="icosa" posicao={[1.45, 2.5, 0.5]} escala={0.6} cor={CIANO} fase={1} />
       <Objeto3D forma="esfera" posicao={[1.35, -3.0, -0.5]} escala={0.55} cor={AZUL_REAL} fase={2} />
-      <Objeto3D forma="knot" posicao={[-1.3, -2.8, 0.6]} escala={0.65} cor={AZUL_ELETRICO} fase={3} />
-      <Objeto3D forma="esfera" posicao={[-2.1, 0.7, -3]} escala={0.3} cor={CIANO} fase={4} />
+      <Objeto3D forma="capsula" posicao={[-1.3, -2.8, 0.6]} escala={0.7} cor={CIANO} fase={3} />
+      <Objeto3D forma="torus" posicao={[-2.1, 0.7, -3]} escala={0.3} cor={CIANO} fase={4} />
       <Objeto3D forma="icosa" posicao={[2.2, -0.5, -3.5]} escala={0.35} cor={AZUL_ELETRICO} fase={5} />
     </ThreeCanvas>
   );
@@ -190,37 +215,43 @@ const Cena3D: React.FC = () => {
 
 /* --------------------------- Forma virando outra -------------------------- */
 
-// Círculo (o "prato") que se transforma em coração (a emoção).
-// Os dois caminhos têm 4 curvas cada, então o morph fica suave.
-const CIRCULO =
-  'M100,20 C144.18,20 180,55.82 180,100 C180,144.18 144.18,180 100,180 C55.82,180 20,144.18 20,100 C20,55.82 55.82,20 100,20 Z';
-const CORACAO =
-  'M100,62 C112,30 150,22 172,45 C195,70 180,112 100,178 C20,112 5,70 28,45 C50,22 88,30 100,62 Z';
+// Cápsula de remédio (a medicação) que se transforma em cérebro (a mente).
+const CAPSULA =
+  'M60,70 L140,70 C156.6,70 170,83.4 170,100 C170,116.6 156.6,130 140,130 L60,130 C43.4,130 30,116.6 30,100 C30,83.4 43.4,70 60,70 Z';
+const CEREBRO =
+  'M100,40 C112,26 136,28 144,42 C162,40 176,56 170,72 C184,82 184,104 170,112 C176,130 160,146 142,142 C134,158 110,160 100,148 C90,160 66,158 58,142 C40,146 24,130 30,112 C16,104 16,82 30,72 C24,56 38,40 56,42 C64,28 88,26 100,40 Z';
+// Detalhes internos: divisão da cápsula e sulcos do cérebro
+const DIVISAO_CAPSULA = 'M100,70 L100,130';
+const SULCOS_CEREBRO =
+  'M100,44 C92,70 108,100 100,146 M66,70 C78,74 82,88 74,98 M134,70 C122,74 118,88 126,98 M58,116 C70,112 80,118 82,128 M142,116 C130,112 120,118 118,128';
 
 const FormaMorph: React.FC = () => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
 
-  const entrada = spring({frame: frame - 4, fps, config: {damping: 12}});
-  const morph = interpolate(frame, [T_SAIDA_FRASE1, T_ENTRADA_FRASE2 + 10], [0, 1], {
+  const entrada = spring({frame: frame - 2, fps, config: {damping: 12}});
+  const morph = interpolate(frame, [T_MORPH_INICIO, T_MORPH_FIM], [0, 1], {
     ...clamp,
     easing: Easing.inOut(Easing.cubic),
   });
-  const caminho = interpolatePath(morph, CIRCULO, CORACAO);
-  const pulso = 1 + Math.sin(frame / 5) * 0.025 * morph;
-  const giro = interpolate(frame, [0, T_SAIDA_FRASE1, T_ENTRADA_FRASE2 + 10], [-25, 0, 360], clamp);
-  const sumir = interpolate(frame, [T_PORTAL - 6, T_PORTAL + 10], [1, 0], clamp);
-  const comprimentoTraco = interpolate(frame, [4, 40], [0, 1], clamp);
+  const caminho = interpolatePath(morph, CAPSULA, CEREBRO);
+  const pulso = 1 + Math.sin(frame / 5) * 0.03 * morph;
+  // A cápsula fica inclinada; no morph ela dá uma volta completa e assenta
+  const inclinacao = interpolate(frame, [0, T_MORPH_INICIO, T_MORPH_FIM], [-35, -20, 0], clamp);
+  const giroY = interpolate(frame, [T_MORPH_INICIO, T_MORPH_FIM], [0, 360], {
+    ...clamp,
+    easing: Easing.inOut(Easing.cubic),
+  });
+  const comprimentoTraco = interpolate(frame, [2, 30], [0, 1], clamp);
 
   return (
     <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
       <svg
         viewBox="0 0 200 200"
-        width={760}
-        height={760}
+        width={780}
+        height={780}
         style={{
-          transform: `translateY(-40px) scale(${entrada * pulso}) rotateY(${giro}deg)`,
-          opacity: sumir,
+          transform: `translateY(-30px) scale(${entrada * pulso}) rotateY(${giroY}deg) rotate(${inclinacao}deg)`,
           filter: `drop-shadow(0 0 30px ${CIANO}) drop-shadow(0 0 70px ${AZUL_ELETRICO})`,
           overflow: 'visible',
         }}
@@ -246,6 +277,21 @@ const FormaMorph: React.FC = () => {
           strokeDasharray={1}
           strokeDashoffset={1 - comprimentoTraco}
         />
+        <path
+          d={DIVISAO_CAPSULA}
+          stroke="url(#tracoAzul)"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          opacity={Math.max(0, comprimentoTraco * (1 - morph * 3))}
+        />
+        <path
+          d={SULCOS_CEREBRO}
+          fill="none"
+          stroke="url(#tracoAzul)"
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          opacity={interpolate(morph, [0.7, 1], [0, 0.9], clamp)}
+        />
       </svg>
     </AbsoluteFill>
   );
@@ -253,45 +299,38 @@ const FormaMorph: React.FC = () => {
 
 /* ----------------------------- Texto que se mexe -------------------------- */
 
-const FraseAnimada: React.FC<{
-  texto: string;
-  inicio: number;
-  saida?: number;
-  destaque?: boolean;
-}> = ({texto, inicio, saida, destaque}) => {
+const LinhaAnimada: React.FC<Linha & {saida?: number}> = ({
+  texto,
+  inicio,
+  saida,
+  destaque,
+  tamanho = 112,
+}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
-  const letras = texto.split('');
 
   return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        flexWrap: 'nowrap',
-        perspective: 1000,
-      }}
-    >
-      {letras.map((letra, i) => {
+    <div style={{display: 'flex', justifyContent: 'center', flexWrap: 'nowrap', perspective: 1000}}>
+      {texto.split('').map((letra, i) => {
         const s = spring({
-          frame: frame - inicio - i * 2,
+          frame: frame - inicio - i * 1.5,
           fps,
-          config: {damping: 11, stiffness: 120, mass: 0.7},
+          config: {damping: 11, stiffness: 130, mass: 0.6},
         });
         const out =
           saida === undefined
             ? 0
-            : interpolate(frame, [saida + i * 1.2, saida + 12 + i * 1.2], [0, 1], {
+            : interpolate(frame, [saida + i * 0.8, saida + 9 + i * 0.8], [0, 1], {
                 ...clamp,
                 easing: Easing.in(Easing.cubic),
               });
         const rotX = interpolate(s, [0, 1], [-95, 0]) + out * 80;
-        const y = interpolate(s, [0, 1], [120, 0]) - out * 160;
+        const y = interpolate(s, [0, 1], [110, 0]) - out * 160;
         const z = interpolate(s, [0, 1], [-400, 0]) + out * 500;
         const blur = interpolate(s, [0, 1], [14, 0], clamp) + out * 18;
         const opacidade = Math.min(1, s * 1.4) * (1 - out);
         // Ondulação contínua depois que a letra entra
-        const onda = Math.sin((frame - i * 3) / 9) * 6 * s * (1 - out);
+        const onda = Math.sin((frame - i * 3) / 9) * 5 * s * (1 - out);
 
         return (
           <span
@@ -301,9 +340,9 @@ const FraseAnimada: React.FC<{
               whiteSpace: 'pre',
               fontFamily,
               fontWeight: 900,
-              fontSize: 128,
+              fontSize: tamanho,
               letterSpacing: -2,
-              lineHeight: 1.05,
+              lineHeight: 1.08,
               color: '#FFFFFF',
               backgroundImage: destaque
                 ? `linear-gradient(180deg, #FFFFFF 15%, ${CIANO} 100%)`
@@ -326,11 +365,10 @@ const FraseAnimada: React.FC<{
 
 const Kicker: React.FC<{texto: string}> = ({texto}) => {
   const frame = useCurrentFrame();
-  const largura = interpolate(frame, [6, 30], [0, 100], {
+  const largura = interpolate(frame, [4, 26], [0, 100], {
     ...clamp,
     easing: Easing.out(Easing.cubic),
   });
-  const opacidade = interpolate(frame, [6, 20, T_PORTAL - 4, T_PORTAL + 6], [0, 1, 1, 0], clamp);
   return (
     <div
       style={{
@@ -339,7 +377,7 @@ const Kicker: React.FC<{texto: string}> = ({texto}) => {
         width: '100%',
         display: 'flex',
         justifyContent: 'center',
-        opacity: opacidade,
+        opacity: interpolate(frame, [4, 16], [0, 1], clamp),
       }}
     >
       <div
@@ -362,101 +400,83 @@ const Kicker: React.FC<{texto: string}> = ({texto}) => {
   );
 };
 
-/* ------------------------- Portal para o vídeo real ----------------------- */
-
-const Portal: React.FC<{videoArquivo: string}> = ({videoArquivo}) => {
-  const frame = useCurrentFrame();
-  const {fps, width, height} = useVideoConfig();
-  const p = spring({frame: frame - T_PORTAL, fps, config: {damping: 16, mass: 0.9}});
-  if (frame < T_PORTAL) return null;
-
-  const w = interpolate(p, [0, 1], [0, width]);
-  const h = interpolate(p, [0, 1], [0, height]);
-  const raio = interpolate(p, [0, 1], [400, 0]);
-  const giro = interpolate(p, [0, 1], [25, 0]);
-
-  return (
-    <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', perspective: 1400}}>
-      <div
-        style={{
-          width: w,
-          height: h,
-          borderRadius: raio,
-          overflow: 'hidden',
-          transform: `rotateY(${giro}deg)`,
-          boxShadow: `0 0 80px ${CIANO}`,
-          background: `linear-gradient(180deg, ${AZUL_PROFUNDO}, ${AZUL_NOITE})`,
-        }}
-      >
-        {videoArquivo ? (
-          <OffthreadVideo
-            src={staticFile(videoArquivo)}
-            style={{width, height, objectFit: 'cover'}}
-          />
-        ) : (
-          <AbsoluteFill
-            style={{
-              alignItems: 'center',
-              justifyContent: 'center',
-              width,
-              height,
-              fontFamily,
-              fontWeight: 800,
-              fontSize: 48,
-              color: `${CIANO}AA`,
-              letterSpacing: 6,
-            }}
-          >
-            SEU VÍDEO AQUI
-          </AbsoluteFill>
-        )}
-      </div>
-    </AbsoluteFill>
-  );
-};
-
 /* ---------------------------------- Cena ---------------------------------- */
 
-export const Cena1: React.FC<z.infer<typeof cena1Schema>> = ({
-  kicker,
-  frase1,
-  frase2,
-  videoArquivo,
-}) => {
+export type Cena1Props = {kicker: string; roteiro: Frase[]};
+
+/**
+ * Camada de abertura. No fim ela se abre num círculo luminoso e deixa
+ * transparente o que estiver por baixo (o vídeo gravado, em VideoCompleto).
+ */
+export const Cena1: React.FC<Cena1Props> = ({kicker, roteiro}) => {
   const frame = useCurrentFrame();
+  const {fps, height} = useVideoConfig();
 
   // Câmera "de mão": a camada 2D também se move em 3D, junto com a cena
-  const camRotX = interpolate(frame, [0, 180], [14, -4], {easing: Easing.inOut(Easing.cubic)});
-  const camRotY = interpolate(frame, [0, 180], [-10, 8], {easing: Easing.inOut(Easing.cubic)});
-  const camZoom = interpolate(frame, [0, 180], [1.18, 1], {easing: Easing.out(Easing.cubic)});
+  const camRotX = interpolate(frame, [0, DURACAO_CENA1], [14, -4], {easing: Easing.inOut(Easing.cubic)});
+  const camRotY = interpolate(frame, [0, DURACAO_CENA1], [-10, 8], {easing: Easing.inOut(Easing.cubic)});
+  const camZoom = interpolate(frame, [0, DURACAO_CENA1], [1.18, 1], {easing: Easing.out(Easing.cubic)});
   const tremor = Math.sin(frame / 6) * 3;
-  const sumirTexto = interpolate(frame, [T_PORTAL - 4, T_PORTAL + 8], [1, 0], clamp);
+
+  // Abertura: um buraco circular cresce do centro e revela o vídeo
+  const abre = spring({frame: frame - T_ABERTURA, fps, config: {damping: 18, mass: 0.8}});
+  const raio = frame < T_ABERTURA ? 0 : abre * height * 1.15;
+  const mascara =
+    raio > 0
+      ? `radial-gradient(circle at 50% 48%, transparent ${raio}px, black ${raio + 2}px)`
+      : undefined;
+  // Na abertura, a cena dá um "mergulho" para dentro do buraco
+  const mergulho = 1 + abre * 0.6;
+
+  const fraseAtual = roteiro.findIndex((f, i) => {
+    const proxima = roteiro[i + 1];
+    return !proxima || frame < proxima.linhas[0].inicio;
+  });
 
   return (
-    <AbsoluteFill style={{backgroundColor: AZUL_NOITE}}>
-      <Fundo />
-      <Cena3D />
-      <AbsoluteFill style={{perspective: 1600}}>
-        <AbsoluteFill
-          style={{
-            transform: `scale(${camZoom}) rotateX(${camRotX}deg) rotateY(${camRotY}deg) translateY(${tremor}px)`,
-            transformStyle: 'preserve-3d',
-          }}
-        >
-          <FormaMorph />
-          <AbsoluteFill
-            style={{alignItems: 'center', justifyContent: 'center', opacity: sumirTexto}}
-          >
-            {frame < T_ENTRADA_FRASE2 + 4 ? (
-              <FraseAnimada texto={frase1} inicio={10} saida={T_SAIDA_FRASE1} />
-            ) : (
-              <FraseAnimada texto={frase2} inicio={T_ENTRADA_FRASE2} destaque />
-            )}
+    <AbsoluteFill>
+      <AbsoluteFill style={{maskImage: mascara, WebkitMaskImage: mascara}}>
+        <AbsoluteFill style={{transform: `scale(${mergulho})`}}>
+          <Fundo />
+          <Cena3D />
+          <AbsoluteFill style={{perspective: 1600}}>
+            <AbsoluteFill
+              style={{
+                transform: `scale(${camZoom}) rotateX(${camRotX}deg) rotateY(${camRotY}deg) translateY(${tremor}px)`,
+                transformStyle: 'preserve-3d',
+              }}
+            >
+              <FormaMorph />
+              <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
+                {roteiro[fraseAtual]?.linhas.map((linha, i) => (
+                  <LinhaAnimada
+                    key={`${fraseAtual}-${i}`}
+                    {...linha}
+                    saida={roteiro[fraseAtual].saida}
+                  />
+                ))}
+              </AbsoluteFill>
+            </AbsoluteFill>
           </AbsoluteFill>
+          <Kicker texto={kicker} />
         </AbsoluteFill>
       </AbsoluteFill>
-      <Kicker texto={kicker} />
-      <Portal videoArquivo={videoArquivo} />
+      {/* Anel de luz na borda da abertura */}
+      {raio > 0 && abre < 0.98 ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: `calc(50% - ${raio}px)`,
+            top: `calc(48% - ${raio}px)`,
+            width: raio * 2,
+            height: raio * 2,
+            borderRadius: '50%',
+            border: `6px solid ${CIANO}`,
+            boxShadow: `0 0 60px ${CIANO}, inset 0 0 60px ${AZUL_ELETRICO}`,
+            opacity: 1 - abre,
+          }}
+        />
+      ) : null}
     </AbsoluteFill>
   );
 };

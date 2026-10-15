@@ -1,35 +1,38 @@
 # Cena 1 — Remotion (azul em gradiente)
 
-Abertura vertical 1080×1920, 6 s, 30 fps:
+Abertura vertical 1080×1920 sincronizada com a fala do vídeo *"VIDEO EDIÇÃO"*
+(medicação × repertório emocional). Dura 6,8 s e se abre para o vídeo gravado.
 
-- **Texto que se mexe:** "NÃO É FOME" entra letra por letra em 3D e sai voando; "É EMOÇÃO" entra com brilho ciano.
-- **Forma virando outra:** um círculo (o prato) se transforma em coração (a emoção) no momento da troca de frase.
-- **Câmera em movimento:** a câmera 3D orbita e se aproxima, a camada de texto inclina junto e a grade do chão avança.
-- **Imagens 3D:** toro, icosaedro, esferas e nó em vidro azul (three.js).
-- **Final:** um portal se abre e revela o seu vídeo.
+| Tempo | Fala | Na tela |
+|---|---|---|
+| 0,3 s | "Se a medicação…" | **A MEDICAÇÃO** |
+| 0,8 s | "…reduz drasticamente o seu food noise…" | **REDUZ O / FOOD NOISE** |
+| 3,4 s | "…a sua urgência por comer e a sua fome…" | **A URGÊNCIA / E A FOME** |
+| 5,1 s | "…isso é maravilhoso." | **ISSO É / MARAVILHOSO** + a cápsula vira cérebro |
+| 6,2 s | "Mas eu preciso te perguntar…" | a cena se abre num círculo de luz e revela o vídeo |
+
+Elementos:
+
+- **Texto que se mexe:** cada letra entra girando em 3D e sai voando.
+- **Forma virando outra:** cápsula de remédio → cérebro (a caneta não constrói a pessoa).
+- **Câmera em movimento:** câmera 3D orbitando e se aproximando; a camada de texto inclina junto.
+- **Imagens 3D:** cápsulas, esferas e poliedros em vidro azul (three.js).
+- O áudio original toca desde o primeiro quadro.
 
 ## Como usar no Mac
 
 ```bash
 cd video-cena1
 npm install
-npm run dev        # abre o Remotion Studio no navegador
-npm run render     # gera out/cena1.mp4
+# coloque o vídeo em public/video-edicao.mp4 (fica fora do Git por ser pesado)
+npm run dev                                          # Remotion Studio
+npx remotion render VideoCompleto out/video-final.mp4  # vídeo completo
+npx remotion render Cena1 out/cena1.mp4              # só a abertura
 ```
-
-No Studio, os textos (`kicker`, `frase1`, `frase2`) podem ser editados no painel lateral.
-
-## Colocar o seu vídeo no final
-
-1. Copie o vídeo para `video-cena1/public/` (ex.: `public/video-edicao.mov`).
-2. Em `src/Root.tsx`, preencha `videoArquivo: 'video-edicao.mov'`.
-
-Os vídeos em `public/` ficam fora do Git (`.gitignore`), porque são pesados.
 
 ## Onde ajustar
 
-Tudo está em `src/Cena1.tsx`:
-
-- Cores: constantes `AZUL_*` e `CIANO` no topo.
-- Tempo: `T_SAIDA_FRASE1`, `T_ENTRADA_FRASE2`, `T_PORTAL` (em frames; 30 = 1 segundo).
-- Formas do morph: `CIRCULO` e `CORACAO` (caminhos SVG com 4 curvas cada).
+- `src/Cena1.tsx` → `ROTEIRO_PADRAO`: textos e o frame em que cada linha entra (30 frames = 1 s).
+- `T_MORPH_INICIO`, `T_MORPH_FIM`, `T_ABERTURA`: morph e abertura.
+- Cores: constantes `AZUL_*` e `CIANO`.
+- `src/Root.tsx` → `videoArquivo` e `duracaoSegundos` do vídeo gravado.
