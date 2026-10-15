@@ -24,11 +24,12 @@ loadFont({
 });
 
 // Paleta azul da cena
-const AZUL_NOITE = '#020722';
-const AZUL_PROFUNDO = '#06145C';
-const AZUL_REAL = '#1440FF';
-const AZUL_ELETRICO = '#2F7BFF';
-const CIANO = '#5FD8FF';
+export const AZUL_NOITE = '#020722';
+export const AZUL_PROFUNDO = '#06145C';
+export const AZUL_REAL = '#1440FF';
+export const AZUL_ELETRICO = '#2F7BFF';
+export const CIANO = '#5FD8FF';
+export {fontFamily};
 
 /*
  * Roteiro sincronizado com a fala (frames a 30 fps; tempos do Whisper):
@@ -225,20 +226,20 @@ const DIVISAO_CAPSULA = 'M100,70 L100,130';
 const SULCOS_CEREBRO =
   'M100,44 C92,70 108,100 100,146 M66,70 C78,74 82,88 74,98 M134,70 C122,74 118,88 126,98 M58,116 C70,112 80,118 82,128 M142,116 C130,112 120,118 118,128';
 
-const FormaMorph: React.FC = () => {
+const FormaMorph: React.FC<{inicio: number; fim: number}> = ({inicio, fim}) => {
   const frame = useCurrentFrame();
   const {fps} = useVideoConfig();
 
   const entrada = spring({frame: frame - 2, fps, config: {damping: 12}});
-  const morph = interpolate(frame, [T_MORPH_INICIO, T_MORPH_FIM], [0, 1], {
+  const morph = interpolate(frame, [inicio, fim], [0, 1], {
     ...clamp,
     easing: Easing.inOut(Easing.cubic),
   });
   const caminho = interpolatePath(morph, CAPSULA, CEREBRO);
   const pulso = 1 + Math.sin(frame / 5) * 0.03 * morph;
   // A cápsula fica inclinada; no morph ela dá uma volta completa e assenta
-  const inclinacao = interpolate(frame, [0, T_MORPH_INICIO, T_MORPH_FIM], [-35, -20, 0], clamp);
-  const giroY = interpolate(frame, [T_MORPH_INICIO, T_MORPH_FIM], [0, 360], {
+  const inclinacao = interpolate(frame, [0, inicio, fim], [-35, -20, 0], clamp);
+  const giroY = interpolate(frame, [inicio, fim], [0, 360], {
     ...clamp,
     easing: Easing.inOut(Easing.cubic),
   });
@@ -299,7 +300,7 @@ const FormaMorph: React.FC = () => {
 
 /* ----------------------------- Texto que se mexe -------------------------- */
 
-const LinhaAnimada: React.FC<Linha & {saida?: number}> = ({
+export const LinhaAnimada: React.FC<Linha & {saida?: number}> = ({
   texto,
   inicio,
   saida,
@@ -404,11 +405,27 @@ const Kicker: React.FC<{texto: string}> = ({texto}) => {
 
 export type Cena1Props = {kicker: string; roteiro: Frase[]};
 
+type CenaAzulProps = Cena1Props & {
+  // Frame em que a cena se abre e revela o que está por baixo
+  abertura?: number;
+  // Se true, a cena entra fechando um círculo sobre o vídeo (usado no meio do vídeo)
+  entraEmCirculo?: boolean;
+  morphInicio?: number;
+  morphFim?: number;
+};
+
 /**
- * Camada de abertura. No fim ela se abre num círculo luminoso e deixa
- * transparente o que estiver por baixo (o vídeo gravado, em VideoCompleto).
+ * Camada azul com texto, morph e 3D. No fim ela se abre num círculo luminoso
+ * e deixa transparente o que estiver por baixo (o vídeo gravado).
  */
-export const Cena1: React.FC<Cena1Props> = ({kicker, roteiro}) => {
+export const Cena1: React.FC<CenaAzulProps> = ({
+  kicker,
+  roteiro,
+  abertura = T_ABERTURA,
+  entraEmCirculo = false,
+  morphInicio = T_MORPH_INICIO,
+  morphFim = T_MORPH_FIM,
+}) => {
   const frame = useCurrentFrame();
   const {fps, height} = useVideoConfig();
 
@@ -419,12 +436,17 @@ export const Cena1: React.FC<Cena1Props> = ({kicker, roteiro}) => {
   const tremor = Math.sin(frame / 6) * 3;
 
   // Abertura: um buraco circular cresce do centro e revela o vídeo
-  const abre = spring({frame: frame - T_ABERTURA, fps, config: {damping: 18, mass: 0.8}});
-  const raio = frame < T_ABERTURA ? 0 : abre * height * 1.15;
+  const abre = spring({frame: frame - abertura, fps, config: {damping: 18, mass: 0.8}});
+  const raio = frame < abertura ? 0 : abre * height * 1.15;
+  // Entrada opcional: um círculo azul cresce do centro e cobre o vídeo
+  const fecha = entraEmCirculo ? spring({frame, fps, config: {damping: 18, mass: 0.8}}) : 1;
+  const raioEntrada = fecha * height * 1.15;
   const mascara =
     raio > 0
       ? `radial-gradient(circle at 50% 48%, transparent ${raio}px, black ${raio + 2}px)`
-      : undefined;
+      : fecha < 0.999
+        ? `radial-gradient(circle at 50% 48%, black ${raioEntrada}px, transparent ${raioEntrada + 2}px)`
+        : undefined;
   // Na abertura, a cena dá um "mergulho" para dentro do buraco
   const mergulho = 1 + abre * 0.6;
 
@@ -446,7 +468,7 @@ export const Cena1: React.FC<Cena1Props> = ({kicker, roteiro}) => {
                 transformStyle: 'preserve-3d',
               }}
             >
-              <FormaMorph />
+              <FormaMorph inicio={morphInicio} fim={morphFim} />
               <AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
                 {roteiro[fraseAtual]?.linhas.map((linha, i) => (
                   <LinhaAnimada
@@ -458,9 +480,25 @@ export const Cena1: React.FC<Cena1Props> = ({kicker, roteiro}) => {
               </AbsoluteFill>
             </AbsoluteFill>
           </AbsoluteFill>
-          <Kicker texto={kicker} />
+          {kicker ? <Kicker texto={kicker} /> : null}
         </AbsoluteFill>
       </AbsoluteFill>
+      {/* Anel de luz na borda da entrada */}
+      {entraEmCirculo && raio === 0 && fecha < 0.98 ? (
+        <div
+          style={{
+            position: 'absolute',
+            left: `calc(50% - ${raioEntrada}px)`,
+            top: `calc(48% - ${raioEntrada}px)`,
+            width: raioEntrada * 2,
+            height: raioEntrada * 2,
+            borderRadius: '50%',
+            border: `6px solid ${CIANO}`,
+            boxShadow: `0 0 60px ${CIANO}, inset 0 0 60px ${AZUL_ELETRICO}`,
+            opacity: 1 - fecha,
+          }}
+        />
+      ) : null}
       {/* Anel de luz na borda da abertura */}
       {raio > 0 && abre < 0.98 ? (
         <div

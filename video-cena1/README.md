@@ -19,6 +19,18 @@ Elementos:
 - **Imagens 3D:** cápsulas, esferas e poliedros em vidro azul (three.js).
 - O áudio original toca desde o primeiro quadro.
 
+## Edição completa (`Edicao`)
+
+Além da abertura, o vídeo inteiro é editado em `src/Edicao.tsx`:
+
+- **Legendas** palavra a palavra (`src/legendas.ts`, da transcrição com Whisper), com a palavra falada em ciano.
+- **Câmera:** cada "plano" (`PLANOS`) tem zoom próprio; a troca é um corte seco com flash azul. Tremor em "estraguei tudo".
+- **Frases de efeito** (`EFEITOS`): FRUSTRAÇÃO, ANSIEDADE, "ESTRAGUEI TUDO", ANESTESIA DA VIDA etc.
+- **Tela dividida** (46–54 s): o vídeo vira um cartão 3D e a lista "não são a mesma coisa" entra embaixo.
+- **Chips** de gatilhos (58–63 s): notícia ruim, briga, estresse, vulnerável, doença.
+- **Clímax azul** (69–73 s): "a caneta diminui o impulso, mas não constrói a pessoa", com a cápsula virando cérebro.
+- **Cartela final** "VOCÊ." (78–80,5 s).
+
 ## Como usar no Mac
 
 ```bash
@@ -26,7 +38,7 @@ cd video-cena1
 npm install
 # coloque o vídeo em public/video-edicao.mp4 (fica fora do Git por ser pesado)
 npm run dev                                          # Remotion Studio
-npx remotion render VideoCompleto out/video-final.mp4  # vídeo completo
+npx remotion render Edicao out/edicao-final.mp4      # vídeo editado completo
 npx remotion render Cena1 out/cena1.mp4              # só a abertura
 ```
 

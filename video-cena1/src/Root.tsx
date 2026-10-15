@@ -1,34 +1,26 @@
-import {AbsoluteFill, Composition, OffthreadVideo, Sequence, staticFile} from 'remotion';
+import {Composition} from 'remotion';
 import {Cena1, Cena1Props, DURACAO_CENA1, ROTEIRO_PADRAO} from './Cena1';
-
-export const FPS = 30;
+import {DURACAO_TOTAL_S, Edicao, EdicaoProps, FPS} from './Edicao';
 
 const propsCena1: Cena1Props = {
   kicker: 'ACADEMIA MENTE EM FORMA',
   roteiro: ROTEIRO_PADRAO,
 };
 
-type VideoCompletoProps = Cena1Props & {
-  // Arquivo dentro de public/. O áudio do vídeo toca desde o primeiro quadro.
-  videoArquivo: string;
-  duracaoSegundos: number;
-};
-
-const VideoCompleto: React.FC<VideoCompletoProps> = ({videoArquivo, ...cena}) => {
-  return (
-    <AbsoluteFill style={{backgroundColor: '#020722'}}>
-      <OffthreadVideo src={staticFile(videoArquivo)} />
-      <Sequence durationInFrames={DURACAO_CENA1}>
-        <Cena1 {...cena} />
-      </Sequence>
-    </AbsoluteFill>
-  );
-};
-
 export const RemotionRoot: React.FC = () => {
   return (
     <>
-      {/* Só a abertura (fundo transparente no final, onde entra o vídeo) */}
+      {/* Vídeo editado completo: abertura, legendas, frases de efeito, câmera, clímax e final */}
+      <Composition
+        id="Edicao"
+        component={Edicao}
+        durationInFrames={Math.round(DURACAO_TOTAL_S * FPS)}
+        fps={FPS}
+        width={1080}
+        height={1920}
+        defaultProps={{videoArquivo: 'video-edicao.mp4'} satisfies EdicaoProps}
+      />
+      {/* Só a abertura */}
       <Composition
         id="Cena1"
         component={Cena1}
@@ -37,19 +29,6 @@ export const RemotionRoot: React.FC = () => {
         width={1080}
         height={1920}
         defaultProps={propsCena1}
-      />
-      {/* Abertura + vídeo gravado completo */}
-      <Composition
-        id="VideoCompleto"
-        component={VideoCompleto}
-        durationInFrames={Math.round(78.13 * FPS)}
-        fps={FPS}
-        width={1080}
-        height={1920}
-        defaultProps={{...propsCena1, videoArquivo: 'video-edicao.mp4', duracaoSegundos: 78.13}}
-        calculateMetadata={({props}) => ({
-          durationInFrames: Math.round(props.duracaoSegundos * FPS),
-        })}
       />
     </>
   );
